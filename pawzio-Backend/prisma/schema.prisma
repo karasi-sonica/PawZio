@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  OWNER
+  CAREGIVER
+  ADMIN
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum ActivityType {
+  WALK_STARTED
+  WALK_ENDED
+  FEEDING
+  PLAYTIME
+  REST
+}
+
+model User {
+  id            String        @id @default(uuid())
+  name          String
+  email         String        @unique
+  password      String
+  role          Role
+  pets          Pet[]
+  caregiverJobs Booking[]     @relation("CaregiverBookings")
+  ownerJobs     Booking[]     @relation("OwnerBookings")
+  verification  Verification?
+  createdAt     DateTime      @default(now())
+}
+
+model Pet {
+  id        String   @id @default(uuid())
+  name      String
+  breed     String?
+  age       Int?
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id])
+  bookings  Booking[]
+}
+
+model Booking {
+  id           String        @id @default(uuid())
+  petId        String
+  ownerId      String
+  caregiverId  String
+  status       BookingStatus
+  pet          Pet           @relation(fields: [petId], references: [id])
+  owner        User          @relation("OwnerBookings", fields: [ownerId], references: [id])
+  caregiver    User          @relation("CaregiverBookings", fields: [caregiverId], references: [id])
+  activities   LiveActivity[]
+  createdAt    DateTime      @default(now())
+}
+
+model LiveActivity {
+  id         String       @id @default(uuid())
+  bookingId String
+  type       ActivityType
+  message    String?
+  booking    Booking      @relation(fields: [bookingId], references: [id])
+  createdAt  DateTime     @default(now())
+}
+
+model Verification {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  idProof   String
+  selfie    String
+  verified  Boolean  @default(false)
+  user      User     @relation(fields: [userId], references: [id])
+}
